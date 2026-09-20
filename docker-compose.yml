@@ -107,6 +107,44 @@ services:
       kafka:
         condition: service_started
 
+  transfer-service:
+    build: ./transfer-service
+    container_name: transfer-service
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - DB_USER=transfer_admin
+      - DB_PASSWORD=transfer_pass
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=transfer_db
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  wallet-service:
+    build: ./wallet-service
+    container_name: wallet-service
+    ports:
+      - "3006:3006"
+    environment:
+      - PORT=3006
+      - DB_USER=wallet_admin
+      - DB_PASSWORD=wallet_pass
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=wallet_db
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
 volumes:
   pgdata:
   kafka_data:
