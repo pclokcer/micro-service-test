@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservice Architecture</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a; /* Tailwind slate-900 */
+            color: #f8fafc;
+        }
+        #mynetwork {
+            width: 100vw;
+            height: 100vh;
+        }
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            color: #38bdf8;
+        }
+        .header p {
+            margin: 0;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Microservices Architecture</h1>
+        <p>Interactive Map. Drag the nodes to explore!</p>
+    </div>
+    <div id="mynetwork"></div>
+
+    <script type="text/javascript">
+        // Colors
+        const COLOR_DB = { background: '#334155', border: '#475569', font: '#f8fafc' };
+        const COLOR_SERVICE = { background: '#0ea5e9', border: '#0284c7', font: '#ffffff' };
+        const COLOR_KAFKA = { background: '#f97316', border: '#c2410c', font: '#ffffff' };
+
+        // create an array with nodes
+        var nodes = new vis.DataSet([
+            // Kafka
+            { id: 'Kafka', label: '📨 Apache Kafka\n(Port: 9092)', shape: 'hexagon', color: COLOR_KAFKA, font: {size: 16, color: '#fff', bold: true}, size: 40 },
+            
+            // Services
+            { id: 'US', label: '👤 User Service', shape: 'box', color: COLOR_SERVICE, font: {size: 14, color: '#fff'} },
+            { id: 'CS', label: '🏢 Company Service', shape: 'box', color: COLOR_SERVICE, font: {size: 14, color: '#fff'} },
+            { id: 'OS', label: '🛒 Order Service', shape: 'box', color: COLOR_SERVICE, font: {size: 14, color: '#fff'} },
+            { id: 'PS', label: '💳 Payment Service', shape: 'box', color: COLOR_SERVICE, font: {size: 14, color: '#fff'} },
+            { id: 'WS', label: '💰 Wallet Service', shape: 'box', color: COLOR_SERVICE, font: {size: 14, color: '#fff'} },
+            { id: 'TS', label: '🔄 Transfer Service', shape: 'box', color: COLOR_SERVICE, font: {size: 14, color: '#fff'} },
+
+            // Databases
+            { id: 'DB1', label: '🗄️ user_db', shape: 'cylinder', color: COLOR_DB, font: {color: '#fff'} },
+            { id: 'DB2', label: '🗄️ company_db', shape: 'cylinder', color: COLOR_DB, font: {color: '#fff'} },
+            { id: 'DB3', label: '🗄️ order_db', shape: 'cylinder', color: COLOR_DB, font: {color: '#fff'} },
+            { id: 'DB4', label: '🗄️ wallet_db', shape: 'cylinder', color: COLOR_DB, font: {color: '#fff'} },
+            { id: 'DB5', label: '🗄️ transfer_db', shape: 'cylinder', color: COLOR_DB, font: {color: '#fff'} }
+        ]);
+
+        // create an array with edges
+        var edges = new vis.DataSet([
+            // DB Connections (Dashed)
+            { from: 'US', to: 'DB1', dashes: true, color: {color: '#64748b'} },
+            { from: 'CS', to: 'DB2', dashes: true, color: {color: '#64748b'} },
+            { from: 'OS', to: 'DB3', dashes: true, color: {color: '#64748b'} },
+            { from: 'WS', to: 'DB4', dashes: true, color: {color: '#64748b'} },
+            { from: 'TS', to: 'DB5', dashes: true, color: {color: '#64748b'} },
+
+            // API Composition
+            { from: 'CS', to: 'US', label: 'HTTP GET', arrows: 'to', font: {align: 'middle', color: '#38bdf8'}, color: {color: '#38bdf8', opacity: 0.8} },
+
+            // Kafka Produce
+            { from: 'US', to: 'Kafka', label: 'user.created', arrows: 'to', font: {align: 'middle', color: '#fba918'}, color: {color: '#f97316'} },
+            { from: 'OS', to: 'Kafka', label: 'order.created', arrows: 'to', font: {align: 'middle', color: '#fba918'}, color: {color: '#f97316'} },
+            { from: 'PS', to: 'Kafka', label: 'payment.events', arrows: 'to', font: {align: 'middle', color: '#fba918'}, color: {color: '#f97316'} },
+            { from: 'TS', to: 'Kafka', label: 'transfer.initiated', arrows: 'to', font: {align: 'middle', color: '#fba918'}, color: {color: '#f97316'} },
+            { from: 'WS', to: 'Kafka', label: 'transfer.events', arrows: 'to', font: {align: 'middle', color: '#fba918'}, color: {color: '#f97316'} },
+
+            // Kafka Consume
+            { from: 'Kafka', to: 'PS', label: 'Consume', arrows: 'to', dashes: [5, 5], font: {align: 'middle', color: '#94a3b8'}, color: {color: '#94a3b8'} },
+            { from: 'Kafka', to: 'OS', label: 'Consume', arrows: 'to', dashes: [5, 5], font: {align: 'middle', color: '#94a3b8'}, color: {color: '#94a3b8'} },
+            { from: 'Kafka', to: 'WS', label: 'Consume', arrows: 'to', dashes: [5, 5], font: {align: 'middle', color: '#94a3b8'}, color: {color: '#94a3b8'} },
+            { from: 'Kafka', to: 'TS', label: 'Consume', arrows: 'to', dashes: [5, 5], font: {align: 'middle', color: '#94a3b8'}, color: {color: '#94a3b8'} }
+        ]);
+
+        // create a network
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+        var options = {
+            physics: {
+                solver: 'forceAtlas2Based',
+                forceAtlas2Based: {
+                    gravitationalConstant: -100,
+                    centralGravity: 0.01,
+                    springLength: 200,
+                    springConstant: 0.08
+                },
+            },
+            layout: {
+                randomSeed: 2
+            },
+            edges: {
+                smooth: {
+                    type: 'curvedCW',
+                    roundness: 0.2
+                }
+            }
+        };
+        var network = new vis.Network(container, data, options);
+    </script>
+</body>
+</html>
