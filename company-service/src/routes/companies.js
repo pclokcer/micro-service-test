@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET single company with its users
+// GET single company with its users (via HTTP API Composition)
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -24,7 +24,24 @@ router.get('/:id', async (req, res) => {
     const usersResult = await pool.query('SELECT user_id, role, joined_at FROM company_has_users WHERE company_id = $1', [id]);
     
     const company = companyResult.rows[0];
-    company.users = usersResult.rows;
+    
+    // Fetch full user details from user-service
+    const usersWithDetails = await Promise.all(usersResult.rows.map(async (u) => {
+      try {
+        // user-service container is reachable as "user-service" within docker network
+        const userRes = await fetch(`http://user-service:3001/users/${u.user_id}`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          return { ...u, name: userData.name, email: userData.email };
+        }
+        return { ...u, name: 'Unknown', email: 'Unknown' };
+      } catch (error) {
+        console.error(`Failed to fetch user ${u.user_id}:`, error.message);
+        return { ...u, name: 'Unknown', email: 'Unknown' };
+      }
+    }));
+
+    company.users = usersWithDetails;
 
     res.json(company);
   } catch (err) {

@@ -76,6 +76,37 @@ services:
       kafka:
         condition: service_started
 
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - DB_USER=order_admin
+      - DB_PASSWORD=order_pass
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=order_db
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_started
+
 volumes:
   pgdata:
   kafka_data:
